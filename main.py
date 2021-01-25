@@ -8,7 +8,7 @@ from copy import deepcopy
 import time
 init()
 CONSTRUCTOR_TIMEOUT = 60
-ACTION_TIMEOUT = 15
+ACTION_TIMEOUT = 5
 DIMENSIONS = (10, 10)
 PENALTY = 10000
 MAXIMAL_LENGTH = 100
@@ -165,7 +165,7 @@ class Game:
         finish = time.time()
         if finish - start > ACTION_TIMEOUT:
             self.score[number_of_agent] -= PENALTY
-            print(f'agent of {self.ids[number_of_agent]} timed out on action!')
+            print(f'agent of {self.ids[number_of_agent]} timed out on action {finish - start}!')
             return 'illegal'
         if not self.check_if_action_legal(action, zoc):
             self.score[number_of_agent] -= PENALTY
@@ -286,10 +286,12 @@ def main():
     ]
     assert len(a_map) == DIMENSIONS[0]
     assert len(a_map[0]) == DIMENSIONS[1]
-    game = Game(a_map)
-    results = game.play_game()
-    print(f'Score for {hw3.ids} is {results[0]}, score for {sample_agent.ids} is {results[1]}')
-
-
+    statistic = [0]*10
+    for idx, _ in enumerate(statistic):
+        game = Game(a_map)
+        results = game.play_game()
+        print(f'Score for {hw3.ids} is {results[0]}, score for {sample_agent.ids} is {results[1]}')
+        statistic[idx] = results[0] > results[1]
+    print(statistic)
 if __name__ == '__main__':
     main()
