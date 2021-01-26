@@ -165,113 +165,11 @@ class Board:
         actions = [tuple_united(action) for action in actions]
         return actions
     
-    def simulate_action_result(self, action, cur_state, player):
+    def simulate_action_result(self, action, cur_state, player, force=False):
         state = self.apply_action(action, cur_state)
-        if self.order[player] == "second":
+        if self.order[player] == "second" or force:
             state = self.change_state(state)
         return state
-'''    
-def game_over(board):
-    board = np.array(board)
-    sick_in_board = (board == 'S').any()
-    return not sick_in_board
-
-def get_all_actions(board, zoc):
-        #bulid medics options
-        board = np.array(board)
-        row, col = np.where(board == 'H')
-        medics_options = set(zip(row, col))
-        medics_options.intersection_update(zoc)
-        info = ["vaccinate"]*len(medics_options)
-        medics_options = list(zip(info, medics_options)) #what if empty #cordinate in board
-        comb_factor = min(1, len(medics_options))
-        medics_options = list(comb(medics_options, comb_factor)) # take into acount number of mdics teams (nCk)
-
-        #bulid police options
-        row, col = np.where(board == 'S')
-        police_options =set(zip(row, col))
-        police_options.intersection_update(zoc)
-        info = ["quarantine"]*len(police_options)
-        police_options =list(zip(info, police_options))
-
-
-        comb_factor = min(2, len(police_options))
-        police_options = list(comb(police_options, comb_factor)) # here we may want to chose only one or empty - consider to add this
-
-        #build actions sets
-        actions = list(product(medics_options, police_options)) #medics_options X police_options (cartesian product)
-        tuple_united = lambda x : x[0] + x[1]
-        actions = [tuple_united(action) for action in actions]
-        return actions
-
-def get_all_game_options(state, player):
-    clk.set_tik()
-    states = []
-    for action in board.get_all_actions(player, state):
-        new_state = state.copy()
-        new_state = board.simulate_action_result(action, new_state, player)
-        states.append((action, new_state))
-    print(f"player {player} number of options: {len(states)}")
-    assert len(states) > 0
-    #if len(boards) > 10:
-    #    print("cut actions")
-    #    return random.sample(boards, 10)
-    clk.set_tok()
-
-    return states
-
-def evaluate(board, player):
-    board_map = board.state_to_agent()
-    score = 0
-    zones = [ (1, board.my_control_zone), (-1, board.annemy_control_zone) ]
-    for f, control_zone in zones:
-        for (i, j) in control_zone:
-            if 'H' == board_map[i][j]:
-                score += f*1
-            if 'I' == board_map[i][j]:
-                score += f*1
-            if 'S' == board_map[i][j]:
-                score -= f*1
-            if 'Q' == board_map[i][j]:
-                score -= f*5
-        #print(f"eval: player {player}, score {score}")
-    return score
-
-def minimax(board, depth, alpha, beta, player):
-    if depth == 0 or board.game_over():
-        return evaluate(board, player), []
-    
-    if player == 0:
-        maxEval = float('-inf')
-        best_action = []
-        c = 0
-        for action, res_board in get_all_game_options(board, player):
-            c += 1
-            evaluation = minimax(res_board, depth-1, alpha, beta, 1)[0]
-            maxEval = max(maxEval, evaluation)
-            if maxEval == evaluation:
-                best_action = action
-            alpha = max(evaluation, alpha)
-            if beta <= alpha:
-                print(f"run just {c} times !!")
-                break
-        return maxEval, best_action
-    else:
-        minEval = float('inf')
-        best_action = []
-        c = 0
-        for action, res_board in get_all_game_options(board, player):
-            c += 1
-            evaluation = minimax(res_board, depth-1 ,alpha, beta, 0)[0]
-            minEval = min(minEval, evaluation)
-            if minEval == evaluation:
-                best_action = action
-            beta = min(evaluation, beta)
-            if beta <= alpha:
-                print(f"run just {c} times !!")
-                break
-        return minEval, best_action
-'''
 
 clk = TikTok()
 class Agent:
@@ -291,7 +189,7 @@ class Agent:
         else:
             state = self.board.simulate_annemy_turn(self.current_state, a_map) # better to return board as well
         test_state = deepcopy(state)
-        action = self.minimax(state, 2, float('-inf'), float('inf'), 0)[1]
+        action = self.minimax(state, 1, float('-inf'), float('inf'), 0)[1]
         assert test_state == state
         state = self.board.simulate_action_result(action, state, 0) 
         self.current_state = state
@@ -308,9 +206,9 @@ class Agent:
         assert len(states) > 0
         
         #clk.set_tok()
-        if len(states) > 10:
+        #if len(states) > 10:
             #print("cut actions")
-            return random.sample(states, 10)
+            #return random.sample(states, 10)
         return states
 
     def evaluate(self, state, player):
@@ -333,6 +231,8 @@ class Agent:
 
     def minimax(self, state, depth, alpha, beta, player):
         if depth == 0 or self.board.game_over(state):
+            if self.board.order[player] == 'second':
+                state = self.board.change_state(state)
             return self.evaluate(state, player), []
         
         if player == 0:
